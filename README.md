@@ -1,4 +1,4 @@
-# 🏗 scaffold-eth - 🎫 Buyer Mints NFT
+# 0xhws
 
 > (Counterfactual NFT minting example...)
 
