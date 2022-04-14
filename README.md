@@ -10,11 +10,11 @@ Required: [Git](https://git-scm.com/downloads), [Node](https://nodejs.org/dist/l
 > clone/fork 🏗 scaffold-eth and get setup:
 
 ```bash
-git clone https://github.com/austintgriffith/scaffold-eth.git buyer-mints-nft
+git clone git@github.com:blockchainatsd/0xhws.git basd-spring-bootcamp
 
-cd buyer-mints-nft
+cd basd-spring-bootcamp
 
-git checkout buyer-mints-nft
+git checkout part-1
 
 yarn
 ```
@@ -30,7 +30,7 @@ yarn upload
 > install and start your 👷‍ Hardhat chain in another terminal:
 
 ```bash
-cd buyer-mints-nft
+cd basd-spring-bootcamp
 
 yarn chain
 ```
@@ -38,7 +38,7 @@ yarn chain
 > in a third terminal window, deploy all the things and start your 📱 frontend:
 
 ```bash
-cd buyer-mints-nft
+cd basd-spring-bootcamp
 
 yarn deploy
 
@@ -54,7 +54,7 @@ yarn start
 
 
 ```bash
-cd buyer-mints-nft
+cd basd-spring-bootcamp
 
 yarn upload
 
