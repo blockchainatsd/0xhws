@@ -10,7 +10,7 @@ Required: [Git](https://git-scm.com/downloads), [Node](https://nodejs.org/dist/l
 > clone/fork 🏗 scaffold-eth and get setup:
 
 ```bash
-git clone git@github.com:blockchainatsd/0xhws.git basd-spring-bootcamp
+git clone https://github.com/blockchainatsd/0xhws.git
 
 cd basd-spring-bootcamp
 
