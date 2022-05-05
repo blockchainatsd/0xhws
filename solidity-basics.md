@@ -367,5 +367,5 @@ contract DataLocations {
 
 ### Assignment
 
-- 
+- Finish the TODOs in Auction.sol
 
