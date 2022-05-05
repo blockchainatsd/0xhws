@@ -22,6 +22,14 @@ pragma solidity >=0.7.0 <0.9.0;
  */
 contract Storage {
 
+    /*
+        uint stands for unsigned integer, meaning non negative integers
+        different sizes are available
+            uint8   ranges from 0 to 2 ** 8 - 1
+            uint16  ranges from 0 to 2 ** 16 - 1
+            ...
+            uint256 ranges from 0 to 2 ** 256 - 1
+    */
     uint256 number;
 
     /**
@@ -86,7 +94,10 @@ pragma solidity ^0.8.4;
 contract Coin {
     // The keyword "public" makes variables
     // accessible from other contracts
-    address public minter;
+    // Immutable variables are like constants. Values of immutable 
+    // variables can be set inside the constructor but cannot be
+    // modified afterwards.
+    address public immutable MINTER;
     mapping (address => uint) public balances;
 
     // Events allow clients to react to specific
@@ -96,13 +107,13 @@ contract Coin {
     // Constructor code is only run when the contract
     // is created
     constructor() {
-        minter = msg.sender;
+        MINTER = msg.sender;
     }
 
     // Sends an amount of newly created coins to an address
     // Can only be called by the contract creator
     function mint(address receiver, uint amount) public {
-        require(msg.sender == minter);
+        require(msg.sender == MINTER);
         balances[receiver] += amount;
     }
 
@@ -180,4 +191,181 @@ than the maximum value of `uint` __*(2**256 - 1)*__. This is also true for the s
 The `revert` statement unconditionally aborts and reverts all changes similar to the require function, but it also allows you to provide the name of an error and additional data which will be supplied to the caller (and eventually to the front-end application or block explorer) so that a failure can more easily be debugged or reacted upon.
 
 The send function can be used by anyone (who already has some of these coins) to send coins to anyone else. If the sender does not have enough coins to send, the if condition evaluates to true. As a result, the revert will cause the operation to fail while providing the sender with error details using the InsufficientBalance error.
+
+## The Ethereum Virtual Machine
+
+### Overview
+
+The Ethereum Virtual Machine or EVM is the runtime environment for smart
+contracts in Ethereum. It is not only sandboxed but actually completely
+isolated, which means that code running inside the EVM has no access to network,
+filesystem or other processes. Smart contracts even have limited access to other
+smart contracts.
+
+### Accounts
+
+There are two kinds of accounts in Ethereum which share the same address space:
+External owned accounts (EOA) that are controlled by public-private key pairs (i.e.
+humans) and contract accounts which are controlled by the code stored together
+with the account.
+
+The address of an external account is determined from the public key while the address of a contract is determined at the time the contract is created (it is derived from the creator address and the number of transactions sent from that address, the so-called “nonce”).
+
+Regardless of whether or not the account stores code, the two types are treated equally by the EVM.
+
+Every account has a persistent key-value store mapping 256-bit words to 256-bit words called storage.
+
+Furthermore, every account has a balance in Ether (in “Wei” to be exact, 1 ether
+is 10**18 wei) which can be modified by sending transactions that include Ether.
+Transactions are paid with ether. Similar to how one dollar is equal to 100 cent, one ether is equal to 10^18 wei.
+
+### Transaction
+
+A transaction is a message that is sent from one account to another account
+(which might be the same or empty, see below). It can include binary data (which
+is called “payload”) and Ether. If the target account contains code, that code
+is executed and the payload is provided as input data.
+
+### Gas
+
+Upon creation, each transaction is charged with a certain amount of gas that has
+to be paid for by the originator of the transaction (`tx.origin`). While the EVM
+executes the transaction, the gas is gradually depleted according to specific
+rules. If the gas is used up at any point (i.e. it would be negative), an
+out-of-gas exception is triggered, which ends execution and reverts all
+modifications made to the state in the current call frame.
+
+
+```javascript
+ // Using up all of the gas that you send causes your transaction to fail.
+    // State changes are undone.
+    // Gas spent are not refunded.
+    function forever() public {
+        // Here we run a loop until all of the gas are spent
+        // and the transaction fails
+        while (true) {
+            i += 1;
+        }
+    }
+```
+
+This mechanism incentivizes economical use of EVM execution time and also compensates EVM executors (i.e. miners / stakers) for their work. Since each block has a maximum amount of gas, it also limits the amount of work needed to validate a block.
+
+The gas price is a value set by the originator of the transaction, who has to pay gas_price * gas up front to the EVM executor. If some gas is left after execution, it is refunded to the transaction originator. In case of an exception that reverts changes, already used up gas is not refunded.
+
+Since EVM executors can choose to include a transaction or not, transaction
+senders cannot abuse the system by setting a low gas price.
+
+### Structs
+
+You can define your own type by creating a struct.
+
+They are useful for grouping together related data.
+
+Structs can be declared outside of a contract and imported in another contract.
+
+```javascript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+contract Todos {
+    struct Todo {
+        string text;
+        bool completed;
+    }
+
+    // An array of 'Todo' structs
+    Todo[] public todos;
+
+    function create(string memory _text) public {
+        // 3 ways to initialize a struct
+        // - calling it like a function
+        todos.push(Todo(_text, false));
+
+        // key value mapping
+        todos.push(Todo({text: _text, completed: false}));
+
+        // initialize an empty struct and then update it
+        Todo memory todo;
+        todo.text = _text;
+        // todo.completed initialized to false
+
+        todos.push(todo);
+    }
+
+    // Solidity automatically created a getter for 'todos' so
+    // you don't actually need this function.
+    function get(uint _index) public view returns (string memory text, bool completed) {
+        Todo storage todo = todos[_index];
+        return (todo.text, todo.completed);
+    }
+
+    // update text
+    function update(uint _index, string memory _text) public {
+        Todo storage todo = todos[_index];
+        todo.text = _text;
+    }
+
+    // update completed
+    function toggleCompleted(uint _index) public {
+        Todo storage todo = todos[_index];
+        todo.completed = !todo.completed;
+    }
+}
+```
+
+### Data Locations - Storage, Memory and Calldata
+
+Variables are declared as either storage, memory or calldata to explicitly specify the location of the data.
+
+storage - variable is a state variable (store on blockchain)
+
+memory - variable is in memory and it exists while a function is being called
+
+calldata - special data location that contains function arguments
+
+```javascript
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+contract DataLocations {
+    uint[] public arr;
+    mapping(uint => address) map;
+    struct MyStruct {
+        uint foo;
+    }
+    mapping(uint => MyStruct) myStructs;
+
+    function f() public {
+        // call _f with state variables
+        _f(arr, map, myStructs[1]);
+
+        // get a struct from a mapping
+        MyStruct storage myStruct = myStructs[1];
+        // create a struct in memory
+        MyStruct memory myMemStruct = MyStruct(0);
+    }
+
+    function _f(
+        uint[] storage _arr,
+        mapping(uint => address) storage _map,
+        MyStruct storage _myStruct
+    ) internal {
+        // do something with storage variables
+    }
+
+    // You can return memory variables
+    function g(uint[] memory _arr) public returns (uint[] memory) {
+        // do something with memory array
+    }
+
+    function h(uint[] calldata _arr) external {
+        // do something with calldata array
+    }
+}
+```
+
+### Assignment
+
+- 
 
